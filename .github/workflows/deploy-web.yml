@@ -48,6 +48,18 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+      # `vercel build` runs the project's install command, so pnpm has to be on
+      # PATH here as well as in the quality job - otherwise it fails with
+      # "spawn pnpm ENOENT". Same versions as the tests, so what ships is what
+      # was tested.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
       # Pinned: the CLI's build/deploy behaviour changes across majors.
       - name: Install Vercel CLI
         run: npm install -g vercel@59
