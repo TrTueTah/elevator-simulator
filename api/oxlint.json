@@ -6,5 +6,61 @@
   },
   "env": {
     "node": true
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/elevator/domain/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              "@nestjs/*",
+              "express",
+              "rxjs",
+              "react",
+              "*.controller",
+              "*.service"
+            ],
+            "paths": [
+              {
+                "name": "@nestjs/common",
+                "message": "Constitution Principle I: the domain layer must not import a framework."
+              },
+              {
+                "name": "express",
+                "message": "Constitution Principle I: the domain layer must not import HTTP types."
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "setTimeout",
+            "message": "Constitution Principle IV: time must be injected, never read ambiently."
+          },
+          {
+            "name": "setInterval",
+            "message": "Constitution Principle IV: time must be injected, never read ambiently."
+          },
+          {
+            "name": "Date",
+            "message": "Constitution Principle IV: the domain must not read a clock."
+          }
+        ],
+        "@typescript-eslint/no-explicit-any": "error"
+      }
+    },
+    {
+      "files": [
+        "src/elevator/application/**/*.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "error"
+      }
+    }
+  ]
 }
