@@ -79,17 +79,26 @@ jobs:
           vercel project ls || echo ">> project ls FAILED: token cannot list projects in this scope"
           echo "::endgroup::"
 
-      # Runs at the repository root on purpose. The Vercel project's Root
-      # Directory setting must be `web`; `vercel pull` brings that setting down
-      # and `vercel build` honours it. Do not also cd into web/, or the build
-      # looks for web/web.
+      # Every Vercel command runs inside web/, so the CLI never sees anything
+      # else in this repository. That matters more than it looks: Vercel turns a
+      # top-level `api/` directory into one Serverless Function per file, and
+      # this repo's `api/` is a NestJS backend - from the repository root it
+      # produces hundreds of functions and blows past the Hobby plan's limit of
+      # 12. From web/ there is no api/ directory, so no function can be created.
+      #
+      # This requires the Vercel project's Root Directory to be EMPTY. We are
+      # already in web/; setting it to `web` as well makes the build look for
+      # web/web.
       #
       # `pull` is also how VITE_API_BASE_URL reaches the build - it is baked into
-      # the bundle at build time, so it has to be set in the Vercel project's
+      # the bundle at build time, so it must be set in the Vercel project's
       # environment variables, not here.
       - name: Pull project settings
+        working-directory: web
         run: vercel pull --yes --environment=production
       - name: Build
+        working-directory: web
         run: vercel build --prod
       - name: Deploy
+        working-directory: web
         run: vercel deploy --prebuilt --prod

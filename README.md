@@ -129,10 +129,14 @@ which sounds like the project is missing when it is really the wrong identifier.
 by running `vercel link` in `web/` and reading `.vercel/project.json` (git-ignored), or from
 Project Settings → General and Team Settings → General.
 
-**Set the project's Root Directory to `web`.** The workflow runs the Vercel CLI at the repository
-root and lets the project's own setting select the subdirectory — `vercel pull` fetches it and
-`vercel build` honours it. Leaving it unset makes Vercel build the repository root, where there is
-no `package.json`.
+**Leave the project's Root Directory EMPTY.** The workflow runs every Vercel command inside `web/`
+already, so setting it to `web` as well makes the build look for `web/web`.
+
+Running from `web/` is not cosmetic. Vercel turns a top-level `api/` directory into one Serverless
+Function per file, and this repository's `api/` is a NestJS backend — from the repository root that
+produces hundreds of functions and fails with `No more than 12 Serverless Functions can be added to
+a Deployment on the Hobby plan`. From `web/` there is no `api/` directory, so no function can be
+created and the deployment stays what it should be: static files.
 
 **Railway has two kinds of token and two different variables for them, which is
 easy to get wrong:**
