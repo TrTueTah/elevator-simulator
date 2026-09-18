@@ -171,10 +171,24 @@ succeeds. Swap `--detach` for `--ci` in `deploy-api.yml` if you would rather the
 build log and fail when the build does.
 
 **`VITE_API_BASE_URL` is baked in at build time.** The first deploy is therefore a sequence, not two
-parallel steps: deploy the API, take its Railway URL, set it in the Vercel project's environment
-variables and deploy the frontend, then set `WEB_ORIGIN` on Railway to the Vercel domain. After
-that the two sides deploy independently. CORS allows the production origin plus Vercel's
-per-deployment preview hostnames by pattern.
+parallel steps:
+
+1. **Give the Railway service a public URL** — Railway → the service → Settings → Networking →
+   Generate Domain. Until you do, there is no address to point the frontend at.
+2. **Set `VITE_API_BASE_URL`** in Vercel → Project Settings → Environment Variables, scoped to
+   Production, to that `https://…up.railway.app` origin — no trailing slash, and `https` rather than
+   `http`, or the browser will block it as mixed content.
+3. **Rebuild.** Setting the variable changes nothing on its own: the value is compiled into the
+   bundle, so an existing deployment keeps the old one. Push, or re-run the deploy workflow, so
+   `vercel pull` fetches the variable and `vercel build` bakes it in.
+4. **Set `WEB_ORIGIN`** on the Railway service to the Vercel production domain and redeploy the API.
+
+After that first pass the two sides deploy independently. CORS already allows any
+`https://<something>.vercel.app` host by pattern, so preview deployments work without further
+configuration; `WEB_ORIGIN` matters once you add a custom domain.
+
+If a production build ever ships without `VITE_API_BASE_URL`, the app says so on screen rather than
+silently failing against `localhost`.
 
 ## Specification
 
