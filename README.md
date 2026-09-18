@@ -120,8 +120,19 @@ the full test suite:
 | `RAILWAY_SERVICE_ID` | `deploy-api.yml` | the same URL |
 | `RAILWAY_ENVIRONMENT_ID` | `deploy-api.yml` | the same URL |
 | `VERCEL_TOKEN` | `deploy-web.yml` | Vercel account settings → Tokens |
-| `VERCEL_ORG_ID` | `deploy-web.yml` | `.vercel/project.json` after `vercel link` |
-| `VERCEL_PROJECT_ID` | `deploy-web.yml` | the same file |
+| `VERCEL_ORG_ID` | `deploy-web.yml` | `.vercel/project.json` after `vercel link` — a `team_…` id |
+| `VERCEL_PROJECT_ID` | `deploy-web.yml` | the same file — a `prj_…` id |
+
+**Vercel wants ids, not the slugs in the dashboard URL.** `vercel.com/<org-slug>/<project-slug>`
+shows names; the CLI needs `team_…` and `prj_…`. Using the slugs fails with `Project not found`,
+which sounds like the project is missing when it is really the wrong identifier. Get the real pair
+by running `vercel link` in `web/` and reading `.vercel/project.json` (git-ignored), or from
+Project Settings → General and Team Settings → General.
+
+**Set the project's Root Directory to `web`.** The workflow runs the Vercel CLI at the repository
+root and lets the project's own setting select the subdirectory — `vercel pull` fetches it and
+`vercel build` honours it. Leaving it unset makes Vercel build the repository root, where there is
+no `package.json`.
 
 **Railway has two kinds of token and two different variables for them, which is
 easy to get wrong:**

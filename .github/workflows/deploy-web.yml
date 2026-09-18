@@ -37,17 +37,45 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     env:
+      # The CLI reads all three from the environment, so no --token on any
+      # command line.
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # These must be IDs, not the slugs from the dashboard URL. An org id looks
+      # like team_xxxxxxxx and a project id like prj_xxxxxxxx; passing the slugs
+      # from vercel.com/<org-slug>/<project-slug> fails with "Project not found".
+      # Both are in .vercel/project.json after running `vercel link`.
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+      # Pinned: the CLI's build/deploy behaviour changes across majors.
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
-      # `vercel pull` fetches the project's environment variables, which is how
-      # VITE_API_BASE_URL reaches the build.
+        run: npm install -g vercel@59
+
+      # Non-fatal, so one run says whether the token is bad or the ids are.
+      - name: Diagnose Vercel access
+        continue-on-error: true
+        run: |
+          echo "org id starts with:     ${VERCEL_ORG_ID:0:5}... (expect 'team_')"
+          echo "project id starts with: ${VERCEL_PROJECT_ID:0:4}... (expect 'prj_')"
+          echo "::group::whoami"
+          vercel whoami || echo ">> whoami FAILED: the token itself is not accepted"
+          echo "::endgroup::"
+          echo "::group::projects this token can see"
+          vercel project ls || echo ">> project ls FAILED: token cannot list projects in this scope"
+          echo "::endgroup::"
+
+      # Runs at the repository root on purpose. The Vercel project's Root
+      # Directory setting must be `web`; `vercel pull` brings that setting down
+      # and `vercel build` honours it. Do not also cd into web/, or the build
+      # looks for web/web.
+      #
+      # `pull` is also how VITE_API_BASE_URL reaches the build - it is baked into
+      # the bundle at build time, so it has to be set in the Vercel project's
+      # environment variables, not here.
       - name: Pull project settings
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production
       - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod
       - name: Deploy
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod
