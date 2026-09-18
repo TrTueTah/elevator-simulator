@@ -56,6 +56,8 @@ jobs:
       - name: Diagnose Vercel access
         continue-on-error: true
         run: |
+          echo "token length: ${#VERCEL_TOKEN} (0 means the secret is unset;"
+          echo "  an unexpected length usually means a stray newline or a partial paste)"
           echo "org id starts with:     ${VERCEL_ORG_ID:0:5}... (expect 'team_')"
           echo "project id starts with: ${VERCEL_PROJECT_ID:0:4}... (expect 'prj_')"
           echo "::group::whoami"
