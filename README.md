@@ -115,16 +115,45 @@ the full test suite:
 
 | Secret | Used by | Where to get it |
 |--------|---------|-----------------|
-| `RAILWAY_TOKEN` | `deploy-api.yml` | Railway project settings → Tokens |
+| `RAILWAY_API_TOKEN` | `deploy-api.yml` | Railway → Account Settings → Tokens |
+| `RAILWAY_PROJECT_ID` | `deploy-api.yml` | the Railway project URL (see below) |
+| `RAILWAY_SERVICE_ID` | `deploy-api.yml` | the same URL |
+| `RAILWAY_ENVIRONMENT_ID` | `deploy-api.yml` | the same URL |
 | `VERCEL_TOKEN` | `deploy-web.yml` | Vercel account settings → Tokens |
 | `VERCEL_ORG_ID` | `deploy-web.yml` | `.vercel/project.json` after `vercel link` |
 | `VERCEL_PROJECT_ID` | `deploy-web.yml` | the same file |
+
+**Railway has two kinds of token and two different variables for them, which is
+easy to get wrong:**
+
+| Variable | Token | Created from |
+|----------|-------|--------------|
+| `RAILWAY_API_TOKEN` | account / workspace | Account Settings → Tokens |
+| `RAILWAY_TOKEN` | project-scoped | inside a project → Settings → Tokens |
+
+Putting an account token in `RAILWAY_TOKEN` fails with `Invalid RAILWAY_TOKEN`, which
+reads like a bad secret but is really the wrong variable.
+
+This project uses the account token, which carries no project context of its own, so the
+deploy workflow names the target explicitly and runs `railway link` before `railway up`.
+Open the service in Railway and read all three ids straight off the URL:
+
+```text
+https://railway.com/project/<PROJECT_ID>/service/<SERVICE_ID>?environmentId=<ENVIRONMENT_ID>
+```
+
+If your account belongs to more than one workspace, `link` cannot guess which — add
+`--workspace` to it (there is a comment in the workflow showing where).
 
 ### Two things to get right when setting this up
 
 **Turn off Vercel's and Railway's own Git integrations.** Both auto-deploy from a connected repo by
 default. Left on alongside these workflows, every push deploys twice — and the providers' copy
 skips the tests entirely.
+
+**`railway up` is detached**, so the job goes green once the upload is accepted, not once the build
+succeeds. Swap `--detach` for `--ci` in `deploy-api.yml` if you would rather the workflow stream the
+build log and fail when the build does.
 
 **`VITE_API_BASE_URL` is baked in at build time.** The first deploy is therefore a sequence, not two
 parallel steps: deploy the API, take its Railway URL, set it in the Vercel project's environment

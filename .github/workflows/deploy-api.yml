@@ -38,11 +38,37 @@ jobs:
     name: Railway
     needs: quality
     runs-on: ubuntu-latest
+    env:
+      # An ACCOUNT/workspace token goes in RAILWAY_API_TOKEN. The other variable,
+      # RAILWAY_TOKEN, is only for project-scoped tokens - passing an account
+      # token there fails with "Invalid RAILWAY_TOKEN".
+      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+      # Which project, service and environment to deploy to. All three come from
+      # the Railway project URL:
+      #   railway.com/project/<PROJECT_ID>/service/<SERVICE_ID>?environmentId=<ENVIRONMENT_ID>
+      RAILWAY_PROJECT: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE_ID }}
+      RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT_ID }}
     steps:
       - uses: actions/checkout@v4
+      # Pinned to a major version: the link/up flags below are v5 flags.
       - name: Install Railway CLI
-        run: npm install -g @railway/cli
+        run: npm install -g @railway/cli@5
+
+      # Both commands run in api/, and they must share a directory: `link`
+      # writes the project context that `up` then reads. Running from api/ also
+      # means only the API is uploaded, so Railway builds against a directory
+      # that actually has a package.json - no root-directory setting needed.
       - name: Deploy
-        run: railway up --service api --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: api
+        run: |
+          railway link \
+            --project "$RAILWAY_PROJECT" \
+            --service "$RAILWAY_SERVICE" \
+            --environment "$RAILWAY_ENVIRONMENT"
+          # No --service here: `up` deploys to whatever `link` just selected, so
+          # the service is named once and cannot drift between the two.
+          railway up --detach
+        # If your Railway account belongs to more than one workspace, `link`
+        # cannot guess which - add to the link command above:
+        #   --workspace "${{ secrets.RAILWAY_WORKSPACE }}"

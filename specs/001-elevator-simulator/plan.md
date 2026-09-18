@@ -221,7 +221,18 @@ After that first pass the two sides deploy independently.
 | `VERCEL_TOKEN` | `deploy-web.yml` | Vercel account settings → Tokens |
 | `VERCEL_ORG_ID` | `deploy-web.yml` | `.vercel/project.json` after `vercel link` |
 | `VERCEL_PROJECT_ID` | `deploy-web.yml` | same file |
-| `RAILWAY_TOKEN` | `deploy-api.yml` | Railway project token |
+| `RAILWAY_API_TOKEN` | `deploy-api.yml` | Railway account/workspace token |
+| `RAILWAY_PROJECT_ID` | `deploy-api.yml` | the Railway project URL |
+| `RAILWAY_SERVICE_ID` | `deploy-api.yml` | the same URL |
+| `RAILWAY_ENVIRONMENT_ID` | `deploy-api.yml` | the same URL |
+
+**Railway token types.** `RAILWAY_TOKEN` accepts only *project-scoped* tokens;
+account and workspace tokens must be passed as `RAILWAY_API_TOKEN`. Using the wrong
+variable fails with `Invalid RAILWAY_TOKEN`, which looks like a credential problem and
+is not one. This project uses an account token, which carries no project context, so the
+workflow runs `railway link` before `railway up`, taking the project, service and
+environment ids from repository secrets so no deployment target is committed to the
+repository.
 
 ### Alternative considered and rejected
 
