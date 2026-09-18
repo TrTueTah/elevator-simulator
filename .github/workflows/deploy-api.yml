@@ -55,6 +55,24 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli@5
 
+      # Narrow an Unauthorized to a specific layer rather than guessing:
+      #   whoami fails            -> the token itself is not accepted
+      #   whoami ok, list empty   -> valid token, but it cannot see this project
+      #                              (usually created for the wrong workspace)
+      #   both ok, link fails     -> project visible but not this service/environment
+      # Non-fatal, so a single run reports everything it can.
+      - name: Diagnose Railway access
+        continue-on-error: true
+        run: |
+          echo "token length: ${#RAILWAY_API_TOKEN} (expect a non-zero, consistent length;"
+          echo "  0 means the secret is unset, an odd length often means a stray newline)"
+          echo "::group::whoami"
+          railway whoami || echo ">> whoami FAILED: the token is not being accepted at all"
+          echo "::endgroup::"
+          echo "::group::projects this token can see"
+          railway list || echo ">> list FAILED: authenticated, but no project is visible"
+          echo "::endgroup::"
+
       # Both commands run in api/, and they must share a directory: `link`
       # writes the project context that `up` then reads. Running from api/ also
       # means only the API is uploaded, so Railway builds against a directory
